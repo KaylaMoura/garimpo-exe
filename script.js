@@ -1,10 +1,10 @@
-// Configuração do JSONBin.io (Sincronização Global Definitiva)
+// Configuração do JSONBin.io (Estável para o Painel Admin do PC)
 const JSONBIN_BIN_ID = "6afb4f4dac6210605a8cbf82";
 const JSONBIN_MASTER_KEY = "$2a$10$t.vYcZgZEhrTpIfvzQCLMu.ZRvUtyiGAcAmWjOlx8mx9CLFc.yYcC";
 
 let produtos = [];
 
-// Carregar produtos da nuvem
+// Carregar produtos da nuvem (com fallback de segurança local)
 async function carregarProdutosDaNuvem() {
     try {
         const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
@@ -12,13 +12,19 @@ async function carregarProdutosDaNuvem() {
                 "X-Master-Key": JSONBIN_MASTER_KEY
             }
         });
-        const dados = await resposta.json();
-        if (dados && dados.record) {
-            produtos = dados.record.produtos || dados.record || [];
+        if (resposta.ok) {
+            const dados = await resposta.json();
+            if (dados && dados.record) {
+                produtos = dados.record.produtos || dados.record || [];
+                // Atualiza o backup local de segurança do PC
+                localStorage.setItem('garimpo_produtos_backup', JSON.stringify(produtos));
+            }
+        } else {
+            throw new Error("Erro na resposta da nuvem");
         }
     } catch (e) {
-        console.error("Erro ao carregar produtos da nuvem:", e);
-        produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
+        console.warn("Aviso: Usando backup local devido a instabilidade na nuvem:", e);
+        produtos = JSON.parse(localStorage.getItem('garimpo_produtos_backup')) || JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
     }
 
     if (document.getElementById('catalogo')) {
@@ -29,8 +35,11 @@ async function carregarProdutosDaNuvem() {
     }
 }
 
-// Salvar produtos na nuvem
+// Salvar produtos na nuvem com segurança contra perda de dados
 async function salvarProdutosNaNuvem() {
+    // Salva imediatamente no backup local do PC para NUNCA perder nada se der pau na internet
+    localStorage.setItem('garimpo_produtos_backup', JSON.stringify(produtos));
+
     try {
         const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
             method: 'PUT',
@@ -42,11 +51,11 @@ async function salvarProdutosNaNuvem() {
         });
         
         if (!resposta.ok) {
-            throw new Error("Erro ao salvar na nuvem");
+            throw new Error("Servidor recusou a gravação");
         }
     } catch (e) {
         console.error("Erro ao salvar na nuvem:", e);
-        alert("Aviso: Falha ao sincronizar com a nuvem. Verifique sua conexão.");
+        alert("⚠️ ATENÇÃO: Seus dados foram salvos no seu computador, mas a nuvem demorou a responder. Suas peças NÃO foram perdidas, tente atualizar em instantes.");
     }
 }
 
@@ -280,7 +289,7 @@ async function salvarOuAtualizarProduto(event) {
     
     const btnSubmit = document.getElementById('btn-submit-form');
     const textoOriginal = btnSubmit.innerText;
-    btnSubmit.innerText = "⏳ Sincronizando com a nuvem...";
+    btnSubmit.innerText = "⏳ Salvando peça...";
     btnSubmit.disabled = true;
 
     const editId = document.getElementById('edit-id').value;
