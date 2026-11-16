@@ -1,7 +1,7 @@
 const GITHUB_USER = "kaylamoura";
 const GITHUB_REPO = "garimpo-exe";
 const GITHUB_BRANCH = "main";
-const GITHUB_TOKEN = "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"; 
+const GITHUB_TOKEN = "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"; 
 const FILE_PATH = "produtos.json";
 
 let produtos = [];
