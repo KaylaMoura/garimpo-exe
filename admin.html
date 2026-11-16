@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin | garimpo.exe</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col bg-custom p-4 md:p-8">
+
+    <!-- TELA DE LOGIN SECRETA -->
+    <div id="tela-login" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm border-2 border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-center space-y-4">
+            <div class="w-20 h-20 mx-auto rounded-full border-2 border-black bg-pink-300 overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                <img src="logo.jpg" alt="garimpo.exe" class="w-full h-full object-cover">
+            </div>
+            <span class="font-pixel text-4xl font-bold">garimpo.exe</span>
+            <p class="text-xs text-gray-600 font-semibold">🔒 Área restrita. Digite sua senha de acesso:</p>
+            <input type="password" id="input-senha" placeholder="Senha secreta" class="w-full border-2 border-black rounded-xl p-3 text-center text-sm font-bold bg-gray-50">
+            <button onclick="verificarSenha()" class="w-full bg-pink-400 border-2 border-black py-3 rounded-xl font-extrabold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition">
+                Entrar no Painel
+            </button>
+            <br>
+            <a href="index.html" class="text-xs text-gray-500 underline font-semibold mt-2 inline-block">← Voltar para o site</a>
+        </div>
+    </div>
+
+    <!-- CONTEÚDO DO PAINEL -->
+    <div id="conteudo-admin" class="hidden flex flex-col flex-grow space-y-8">
+        <header class="max-w-4xl mx-auto w-full flex justify-between items-center bg-white border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div class="flex items-center gap-3">
+                <div class="w-14 h-14 rounded-full border-2 border-black bg-pink-300 overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <img src="logo.jpg" alt="garimpo.exe" class="w-full h-full object-cover">
+                </div>
+                <span class="font-pixel text-3xl font-bold">garimpo.exe [ADMIN]</span>
+            </div>
+            <a href="index.html" class="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold border-2 border-black hover:bg-pink-600 transition">← Voltar para o Site</a>
+        </header>
+
+        <main class="max-w-4xl mx-auto w-full space-y-8 flex-grow">
+            
+            <!-- MINI-RESUMO DO ESTOQUE -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-pink-100 border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <p class="text-xs font-bold uppercase text-gray-700">Peças Disponíveis</p>
+                    <p id="resumo-disponivel" class="text-3xl font-extrabold mt-1">0</p>
+                </div>
+                <div class="bg-yellow-100 border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <p class="text-xs font-bold uppercase text-gray-700">Peças Reservadas</p>
+                    <p id="resumo-reservado" class="text-3xl font-extrabold mt-1">0</p>
+                </div>
+                <div class="bg-purple-100 border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <p class="text-xs font-bold uppercase text-gray-700">Valor Total Ativo</p>
+                    <p id="resumo-valor" class="text-3xl font-extrabold mt-1">R$ 0,00</p>
+                </div>
+            </div>
+
+            <!-- FORMULÁRIO DE CADASTRO -->
+            <div class="bg-white border-2 border-black p-6 rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <h2 class="text-xl font-extrabold mb-4 flex items-center gap-2">✨ Cadastrar Nova Peça</h2>
+                
+                <form id="form-produto" onsubmit="cadastrarProduto(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Nome da Peça</label>
+                            <input type="text" id="cad-nome" required placeholder="Ex: Jaqueta Jeans Vintage" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Preço (R$)</label>
+                            <input type="number" step="0.01" id="cad-preco" required placeholder="89.00" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Categoria</label>
+                            <select id="cad-categoria" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold bg-white">
+                                <option value="Roupas">Roupas</option>
+                                <option value="Acessórios">Acessórios</option>
+                                <option value="Eletrônicos">Eletrônicos</option>
+                                <option value="Casa & Decoração">Casa & Decoração</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Subcategoria</label>
+                            <input type="text" id="cad-sub" placeholder="Ex: Casacos, Calças, Bolsas..." class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Tamanho / Numeração</label>
+                            <select id="cad-tamanho" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold bg-white">
+                                <option value="M">M</option>
+                                <option value="P">P</option>
+                                <option value="G">G</option>
+                                <option value="PP">PP</option>
+                                <option value="GG">GG</option>
+                                <option value="Único">Único</option>
+                                <option value="36">36</option>
+                                <option value="38">38</option>
+                                <option value="40">40</option>
+                                <option value="42">42</option>
+                                <option value="44">44</option>
+                                <option value="46">46</option>
+                                <option value="48">48</option>
+                                <option value="Não se aplica">Não se aplica</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- SELETOR DE FOTOS DA GALERIA -->
+                    <div class="space-y-3 bg-pink-50 p-4 rounded-2xl border-2 border-black">
+                        <label class="block text-xs font-extrabold uppercase text-gray-800">📸 Fotos da Peça (Escolha da galeria do celular ou PC)</label>
+                        
+                        <div class="space-y-2">
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-600 block mb-1">Foto 1 (Principal / Frente):</span>
+                                <input type="file" id="arquivo-foto-1" accept="image/*" class="w-full border-2 border-black rounded-xl p-2 text-xs font-semibold bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-300 file:text-black hover:file:bg-pink-400">
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-600 block mb-1">Foto 2 (Costas / Detalhe - Opcional):</span>
+                                <input type="file" id="arquivo-foto-2" accept="image/*" class="w-full border-2 border-black rounded-xl p-2 text-xs font-semibold bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-300 file:text-black hover:file:bg-pink-400">
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-600 block mb-1">Foto 3 (No corpo - Opcional):</span>
+                                <input type="file" id="arquivo-foto-3" accept="image/*" class="w-full border-2 border-black rounded-xl p-2 text-xs font-semibold bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-300 file:text-black hover:file:bg-pink-400">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-medium">💡 Dica: Se quiser cadastrar antes e colocar as fotos só amanhã, pode deixar os campos em branco!</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Marca</label>
+                            <input type="text" id="cad-marca" placeholder="Ex: Garimpo / Sem marca" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Tecido / Material</label>
+                            <input type="text" id="cad-tecido" placeholder="Ex: Algodão, Couro..." class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold uppercase mb-1">Avarias / Detalhes</label>
+                            <input type="text" id="cad-avarias" placeholder="Ex: Perfeita / Pequeno detalhe" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold uppercase mb-1">Medidas em cm</label>
+                        <input type="text" id="cad-medidas" placeholder="Ex: Busto: 90cm | Comprimento: 60cm" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
+                    </div>
+
+                    <button type="submit" class="w-full bg-pink-400 border-2 border-black py-3 rounded-xl font-extrabold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition">
+                        💾 Cadastrar Peça no Site
+                    </button>
+                </form>
+            </div>
+
+            <!-- GERENCIAMENTO -->
+            <div class="bg-white border-2 border-black p-6 rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <h2 class="text-xl font-extrabold mb-4">📋 Gerenciar Peças Cadastradas</h2>
+                <div id="lista-admin" class="space-y-3"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function verificarSenha() {
+            const digitada = document.getElementById('input-senha').value;
+            const senhaCorretaBase64 = "Z2FyaW1wbzEyMw=="; // Senha padrão: garimpo123
+
+            if (btoa(digitada) === senhaCorretaBase64) {
+                document.getElementById('tela-login').classList.add('hidden');
+                document.getElementById('conteudo-admin').classList.remove('hidden');
+                atualizarPainelAdmin();
+            } else {
+                alert("Senha incorreta!");
+                document.getElementById('input-senha').value = "";
+                document.getElementById('input-senha').focus();
+            }
+        }
+
+        document.getElementById('input-senha').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') verificarSenha();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>garimpo.exe | Achados Únicos</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- APENAS A ÁREA DO ÍCONE E NOME RECEBE O FUNDO COM AS ONDAS DA LOGO -->
+    <header class="bloco-logo-fundo py-10 px-4 text-center border-b-2 border-black">
+        <div class="max-w-xl mx-auto flex flex-col items-center space-y-3">
+            <!-- Logo Grande Centralizada -->
+            <div class="w-28 h-28 md:w-32 md:h-32 rounded-full border-3 border-black bg-pink-300 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:rotate-3 transition transform">
+                <img src="logo.jpg" alt="garimpo.exe" class="w-full h-full object-cover">
+            </div>
+            <!-- Nome do Brechó em Destaque -->
+            <span class="font-pixel text-5xl md:text-6xl tracking-wider font-extrabold">garimpo.exe</span>
+            
+            <!-- Botão do Instagram -->
+            <a href="https://instagram.com/garimpo.exe" target="_blank" class="inline-flex items-center gap-2 bg-black text-white px-4 py-1.5 rounded-full text-xs font-bold border-2 border-black shadow-[2px_2px_0px_0px_#ec4899] hover:translate-x-0.5 hover:translate-y-0.5 transition">
+                📸 @garimpo.exe
+            </a>
+        </div>
+    </header>
+
+    <!-- BANNER INTRODUTÓRIO Y2K (Fica limpo e isolado, sem a imagem de fundo) -->
+    <section class="banner-y2k py-10 px-4 text-center relative overflow-hidden border-b-2 border-black">
+        <div class="max-w-3xl mx-auto space-y-3">
+            <span class="inline-block bg-black text-pink-300 text-xs font-mono px-3 py-1 rounded-full border border-black shadow-[2px_2px_0px_0px_#fff]">
+                ✨ CURADORIA EXCLUSIVA • ANOS 2000 & STREETWEAR
+            </span>
+            <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">
+                Garimpos únicos, tecnologia e atitude.
+            </h1>
+            <p class="text-xs md:text-sm text-gray-800 font-medium max-w-lg mx-auto">
+                Peças garimpadas a dedo com identidade e personalidade. Reserve direto por aqui e finalize na nossa DM!
+            </p>
+        </div>
+    </section>
+
+    <!-- MENU DE NAVEGAÇÃO RÁPIDA -->
+    <div class="bg-black text-white py-3 px-4 border-b-2 border-black">
+        <nav class="max-w-4xl mx-auto flex flex-wrap justify-center items-center gap-6 md:gap-12 text-xs md:text-sm font-bold uppercase tracking-wider">
+            <a href="#catalogo" class="hover:text-pink-400 transition">🛍️ Catálogo</a>
+            <a href="#secao-como-reservar" class="hover:text-pink-400 transition">📌 Como Reservar</a>
+            <a href="#secao-entregas" class="hover:text-pink-400 transition">🚀 Entregas & Pagamento</a>
+        </nav>
+    </div>
+
+    <!-- ÁREA DA VITRINE E SEÇÕES (COM FUNDO ESTÁTICO BRANCO, COMO ESTAVA ANTES) -->
+    <div class="conteudo-vitrine-estatico flex-grow max-w-6xl mx-auto w-full pb-12 shadow-sm border-x-2 border-black">
+        
+        <!-- BARRA DE FILTRAR -->
+        <div class="w-full px-6 pt-6 flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-extrabold flex items-center gap-2">
+                    🛍️ Vitrine Ativa
+                </h2>
+                <p id="contador-pecas" class="text-xs text-gray-600 font-semibold mt-0.5">Mostrando peças</p>
+            </div>
+            <button onclick="abrirFiltros()" class="bg-white border-2 border-black px-4 py-2 rounded-xl font-bold text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition flex items-center gap-2">
+                🔍 Filtrar Peças
+            </button>
+        </div>
+
+        <!-- VITRINE DE PRODUTOS -->
+        <main id="catalogo" class="w-full p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 my-4">
+            <!-- Preenchido via JavaScript -->
+        </main>
+
+        <!-- ABA COMO RESERVAR -->
+        <section id="secao-como-reservar" class="w-full px-6 my-12">
+            <div class="bg-pink-100 border-2 border-black rounded-3xl p-6 md:p-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="space-y-2">
+                        <span class="bg-black text-pink-300 text-xs font-mono px-3 py-1 rounded-full border border-black">📌 PASSO A PASSO EXCLUSIVO</span>
+                        <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight">Como garantir sua peça no garimpo.exe</h2>
+                        <p class="text-gray-700 text-sm md:text-base leading-relaxed">Nossos achados são únicos e exclusivos! Para garantir que aquela peça especial venha para o seu guarda-roupa, siga o passo a passo abaixo:</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <div class="bg-white border-2 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
+                            <span class="font-pixel text-3xl font-bold text-pink-600">01.</span>
+                            <h4 class="font-extrabold text-sm">Escolha a Peça</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">Navegue pelo catálogo, confira as medidas exatas em cm e clique em "Ver Detalhes".</p>
+                        </div>
+                        <div class="bg-white border-2 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
+                            <span class="font-pixel text-3xl font-bold text-pink-600">02.</span>
+                            <h4 class="font-extrabold text-sm">Gere a Mensagem</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">Preencha seu nome e seu @ do Instagram no painel da peça para gerar o texto automático.</p>
+                        </div>
+                        <div class="bg-white border-2 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
+                            <span class="font-pixel text-3xl font-bold text-pink-600">03.</span>
+                            <h4 class="font-extrabold text-sm">Mande na DM</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">Cole a mensagem no nosso Instagram. A reserva garante a peça por até <strong>24 horas</strong>!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA ENTREGAS & PAGAMENTO -->
+        <section id="secao-entregas" class="w-full px-6 mb-12">
+            <div class="bg-purple-100 border-2 border-black rounded-3xl p-6 md:p-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="space-y-2">
+                        <span class="bg-black text-purple-300 text-xs font-mono px-3 py-1 rounded-full border border-black">🚀 LOGÍSTICA & PAGAMENTOS</span>
+                        <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight">Entregas Combinadas & Pagamentos</h2>
+                        <p class="text-gray-700 text-sm md:text-base leading-relaxed">Tudo planejado para sua comodidade e segurança. Confira as regras de envio e formas de pagamento aceitas:</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div class="bg-white border-2 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-3">
+                            <h4 class="font-extrabold text-base flex items-center gap-2">📦 Como funcionam as Entregas</h4>
+                            <p class="text-xs text-gray-700 leading-relaxed">Não fazemos envios imediatos! As entregas são <strong>sempre combinadas com antecedência</strong> (dia e horário marcados). Você pode optar por:</p>
+                            <ul class="text-xs text-gray-700 space-y-1.5 list-disc list-inside font-medium pt-1">
+                                <li>Retirada no local combinado.</li>
+                                <li>Envio via Uber Flash / motoboy (pedido e pago por você; nós apenas entregamos no ponto).</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-white border-2 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-3">
+                            <h4 class="font-extrabold text-base flex items-center gap-2">💳 Formas de Pagamento</h4>
+                            <p class="text-xs text-gray-700 leading-relaxed">Aceitamos diversas formas para facilitar o seu garimpo:</p>
+                            <ul class="text-xs text-gray-700 space-y-1.5 list-disc list-inside font-medium pt-1">
+                                <li><strong>Pix</strong> (enviado após a confirmação na DM).</li>
+                                <li><strong>Cartão de Crédito</strong> (via link online ou maquininha por aproximação no celular na entrega, com taxa).</li>
+                                <li><strong>Dinheiro</strong> na entrega/retirada.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-200 border-2 border-black p-4 rounded-2xl text-xs font-bold text-gray-900 flex items-center gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                        <span class="text-lg">⚠️</span>
+                        <span>Aviso importante: Por serem peças únicas de garimpo, <strong>não realizamos trocas nem devoluções</strong>. Confira sempre as medidas em cm!</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- GAVETA DE FILTROS -->
+    <div id="modal-filtros" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden flex justify-end">
+        <div class="bg-white w-full max-w-md h-full border-l-2 border-black p-6 flex flex-col justify-between shadow-2xl overflow-y-auto">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b-2 border-black mb-6">
+                    <h3 class="font-pixel text-2xl font-bold">Filtros do Garimpo</h3>
+                    <button onclick="fecharFiltros()" class="bg-black text-white w-8 h-8 rounded-lg font-bold border border-black hover:bg-pink-600 transition">✕</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-extrabold uppercase mb-2 text-gray-700">Categoria Principal</label>
+                        <select id="filtro-categoria" class="w-full border-2 border-black rounded-xl p-2.5 text-sm font-semibold bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            <option value="">Todas as categorias</option>
+                            <option value="Roupas">Roupas</option>
+                            <option value="Acessórios">Acessórios</option>
+                            <option value="Eletrônicos">Eletrônicos</option>
+                            <option value="Casa & Decoração">Casa & Decoração</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold uppercase mb-2 text-gray-700">Tamanho ou Numeração</label>
+                        <select id="filtro-tamanho" class="w-full border-2 border-black rounded-xl p-2.5 text-sm font-semibold bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            <option value="">Todos os tamanhos</option>
+                            <option value="PP">PP</option>
+                            <option value="P">P</option>
+                            <option value="M">M</option>
+                            <option value="G">G</option>
+                            <option value="GG">GG</option>
+                            <option value="Único">Único</option>
+                            <option value="36">36</option>
+                            <option value="38">38</option>
+                            <option value="40">40</option>
+                            <option value="42">42</option>
+                            <option value="44">44</option>
+                            <option value="46">46</option>
+                            <option value="48">48</option>
+                            <option value="Não se aplica">Não se aplica</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold uppercase mb-2 text-gray-700">Status</label>
+                        <select id="filtro-status" class="w-full border-2 border-black rounded-xl p-2.5 text-sm font-semibold bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            <option value="">Todos</option>
+                            <option value="disponivel">Apenas Disponíveis</option>
+                            <option value="reservado">Apenas Reservadas</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t-2 border-black flex gap-3">
+                <button onclick="limparFiltros()" class="w-1/2 bg-gray-200 border-2 border-black py-3 rounded-xl font-bold text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition">Limpar</button>
+                <button onclick="aplicarFiltros()" class="w-1/2 bg-pink-400 border-2 border-black py-3 rounded-xl font-bold text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition">Filtrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DETALHES E RESERVA -->
+    <div id="modal-detalhes" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl border-2 border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] max-h-[90vh] overflow-y-auto relative">
+            <button onclick="fecharDetalhes()" class="absolute top-4 right-4 bg-black text-white w-9 h-9 rounded-xl font-bold border border-black hover:bg-pink-600 transition flex items-center justify-center">✕</button>
+            <div id="conteudo-detalhes" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <!-- RODAPÉ -->
+    <footer class="bg-black text-white text-center py-6 text-xs font-mono mt-auto z-10">
+        <p>garimpo.exe © 2026 • Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>s
