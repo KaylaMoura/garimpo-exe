@@ -1,4 +1,4 @@
-// Sistema de Produtos do garimpo.exe (Salva no navegador com redimensionador de fotos)
+// Sistema de Produtos do garimpo.exe (Salva no navegador com redimensionador e edição)
 let produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
 
 function salvarProdutos() {
@@ -187,93 +187,151 @@ function copiarMensagem() {
     });
 }
 
-// 4. FUNÇÕES DO PAINEL ADMIN (Com redimensionador automático de imagem)
-async function cadastrarProduto(event) {
+// 4. FUNÇÕES DO PAINEL ADMIN (Com Cadastro e Edição)
+async function comprimirEConverterImagem(fileInputId) {
+    return new Promise((resolve) => {
+        const fileInput = document.getElementById(fileInputId);
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            resolve(null);
+            return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                resolve(dataUrl);
+            };
+            img.onerror = function() { resolve(null); };
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function salvarOuAtualizarProduto(event) {
     event.preventDefault();
     
-    // Função que comprime e redimensiona a foto para não pesar no site
-    const comprimirEConverterImagem = (fileInputId) => {
-        return new Promise((resolve) => {
-            const fileInput = document.getElementById(fileInputId);
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                resolve(null);
-                return;
-            }
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; // Tamanho ideal para carregar rápido no celular
-                    const MAX_HEIGHT = 800;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Converte para imagem leve (JPEG com qualidade 75%)
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-                    resolve(dataUrl);
-                };
-                img.onerror = function() { resolve(null); };
-            };
-            reader.readAsDataURL(file);
-        });
-    };
-
+    const editId = document.getElementById('edit-id').value;
     const foto1 = await comprimirEConverterImagem('arquivo-foto-1');
     const foto2 = await comprimirEConverterImagem('arquivo-foto-2');
     const foto3 = await comprimirEConverterImagem('arquivo-foto-3');
 
-    const nomeEl = document.getElementById('cad-nome');
-    const precoEl = document.getElementById('cad-preco');
-    const catEl = document.getElementById('cad-categoria');
-    const subEl = document.getElementById('cad-sub');
-    const tamEl = document.getElementById('cad-tamanho');
+    const nome = document.getElementById('cad-nome').value;
+    const preco = parseFloat(document.getElementById('cad-preco').value) || 0;
+    const categoria = document.getElementById('cad-categoria').value;
+    const subcategoria = document.getElementById('cad-sub').value;
+    const tamanho = document.getElementById('cad-tamanho').value;
+    const marca = document.getElementById('cad-marca').value;
+    const tecido = document.getElementById('cad-tecido').value;
+    const avarias = document.getElementById('cad-avarias').value;
+    const medidas = document.getElementById('cad-medidas').value;
 
-    if (!nomeEl || !precoEl) {
-        alert("Erro: Campos obrigatórios do formulário não encontrados.");
-        return;
+    if (editId) {
+        // EDIÇÃO DE PEÇA EXISTENTE
+        const p = produtos.find(item => item.id == editId);
+        if (p) {
+            p.nome = nome;
+            p.preco = preco;
+            p.categoria = categoria;
+            p.subcategoria = subcategoria;
+            p.tamanho = tamanho;
+            p.marca = marca;
+            p.tecido = tecido;
+            p.avarias = avarias;
+            p.medidas = medidas;
+
+            // Se novas fotos foram escolhidas, atualiza; senão, mantém as antigas
+            if (foto1) p.fotos[0] = foto1;
+            if (foto2) p.fotos[1] = foto2;
+            if (foto3) p.fotos[2] = foto3;
+            // Limpa nulos se houver
+            p.fotos = p.fotos.filter(f => f !== null && f !== undefined);
+        }
+        alert("✨ Peça atualizada com sucesso!");
+        cancelarEdicao();
+    } else {
+        // CADASTRO DE NOVA PEÇA
+        const novasFotos = [foto1, foto2, foto3].filter(f => f !== null);
+        const novoProduto = {
+            id: Date.now(),
+            nome: nome,
+            preco: preco,
+            categoria: categoria,
+            subcategoria: subcategoria,
+            tamanho: tamanho,
+            fotos: novasFotos,
+            marca: marca,
+            tecido: tecido,
+            avarias: avarias,
+            medidas: medidas,
+            status: "disponivel"
+        };
+
+        produtos.push(novoProduto);
+        alert("✨ Peça cadastrada com sucesso!");
+        document.getElementById('form-produto').reset();
     }
 
-    const novoProduto = {
-        id: Date.now(),
-        nome: nomeEl.value,
-        preco: parseFloat(precoEl.value) || 0,
-        categoria: catEl ? catEl.value : "Roupas",
-        subcategoria: subEl ? subEl.value : "",
-        tamanho: tamEl ? tamEl.value : "Único",
-        fotos: [foto1, foto2, foto3].filter(f => f !== null),
-        marca: document.getElementById('cad-marca') ? document.getElementById('cad-marca').value : "",
-        tecido: document.getElementById('cad-tecido') ? document.getElementById('cad-tecido').value : "",
-        avarias: document.getElementById('cad-avarias') ? document.getElementById('cad-avarias').value : "",
-        medidas: document.getElementById('cad-medidas') ? document.getElementById('cad-medidas').value : "",
-        status: "disponivel"
-    };
-
-    produtos.push(novoProduto);
     salvarProdutos();
-    alert("✨ Peça cadastrada e enviada para o site com sucesso!");
-    document.getElementById('form-produto').reset();
     atualizarPainelAdmin();
+}
+
+function carregarParaEdicao(id) {
+    const p = produtos.find(item => item.id === id);
+    if (!p) return;
+
+    document.getElementById('edit-id').value = p.id;
+    document.getElementById('cad-nome').value = p.nome;
+    document.getElementById('cad-preco').value = p.preco;
+    document.getElementById('cad-categoria').value = p.categoria;
+    document.getElementById('cad-sub').value = p.subcategoria || '';
+    document.getElementById('cad-tamanho').value = p.tamanho;
+    document.getElementById('cad-marca').value = p.marca || '';
+    document.getElementById('cad-tecido').value = p.tecido || '';
+    document.getElementById('cad-avarias').value = p.avarias || '';
+    document.getElementById('cad-medidas').value = p.medidas || '';
+
+    // Muda o visual do formulário para modo edição
+    document.getElementById('titulo-form').innerText = "✏️ Editando Peça";
+    document.getElementById('btn-submit-form').innerText = "💾 Salvar Alterações";
+    document.getElementById('btn-cancelar-edicao').classList.remove('hidden');
+
+    // Sobe a tela suavemente até o formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarEdicao() {
+    document.getElementById('form-produto').reset();
+    document.getElementById('edit-id').value = '';
+    document.getElementById('titulo-form').innerText = "✨ Cadastrar Nova Peça";
+    document.getElementById('btn-submit-form').innerText = "💾 Cadastrar Peça no Site";
+    document.getElementById('btn-cancelar-edicao').classList.add('hidden');
 }
 
 function atualizarPainelAdmin() {
@@ -302,9 +360,12 @@ function atualizarPainelAdmin() {
                 <h4 class="font-extrabold text-sm mt-1">${p.nome} - R$ ${Number(p.preco).toFixed(2).replace('.', ',')}</h4>
                 <p class="text-xs text-gray-500">Status atual: <strong>${p.status.toUpperCase()}</strong></p>
             </div>
-            <div class="flex items-center gap-2 w-full md:w-auto">
+            <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                <button onclick="carregarParaEdicao(${p.id})" class="bg-blue-300 border border-black px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-400 transition">
+                    ✏️ Editar
+                </button>
                 <button onclick="alternarStatus(${p.id})" class="bg-yellow-300 border border-black px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-400 transition">
-                    ${p.status === 'disponivel' ? '🔒 Marcar Reservada' : '🔓 Marcar Disponível'}
+                    ${p.status === 'disponivel' ? '🔒 Reservar' : '🔓 Disponibilizar'}
                 </button>
                 <button onclick="excluirProduto(${p.id})" class="bg-black text-white border border-black px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-pink-600 transition">
                     🗑️ Excluir
