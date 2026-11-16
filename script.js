@@ -1,23 +1,35 @@
-const GITHUB_USER = "kaylamoura";
-const GITHUB_REPO = "garimpo-exe";
-const GITHUB_BRANCH = "main";
-const GITHUB_TOKEN = "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"; 
-const FILE_PATH = "produtos.json";
+// =========================================================================
+// CONFIGURAÇÃO DO SUPABASE
+// =========================================================================
+const SUPABASE_URL = "https://rrytjwfchrvkoyekbdvm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Opf9DMJbLv1GXV7y6r8JNQ_hrZz4UOQ";
+// =========================================================================
 
 let produtos = [];
 
+const headersSupabase = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+};
+
+// 1. CARREGAR PEÇAS DO BANCO DE DADOS (PARA TODOS OS VISITANTES E ADMIN)
 async function carregarProdutosDaNuvem() {
     try {
-        const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${FILE_PATH}?t=${Date.now()}`;
-        const resposta = await fetch(url);
+        const resposta = await fetch(`${SUPABASE_URL}/rest/v1/pecas?select=*&order=id.desc`, {
+            method: 'GET',
+            headers: headersSupabase
+        });
+
         if (resposta.ok) {
-            const dados = await resposta.json();
-            produtos = Array.isArray(dados) ? dados : (dados.produtos || []);
+            produtos = await resposta.json();
         } else {
+            console.error("Erro ao buscar peças:", await resposta.text());
             produtos = [];
         }
     } catch (e) {
-        console.error("Erro ao carregar do GitHub:", e);
+        console.error("Erro de conexão com o banco:", e);
         produtos = [];
     }
 
@@ -25,58 +37,7 @@ async function carregarProdutosDaNuvem() {
     if (document.getElementById('lista-admin')) atualizarPainelAdmin();
 }
 
-async function salvarProdutosNaNuvem() {
-    try {
-        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
-        
-        let sha = null;
-        const getRes = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json"
-            }
-        });
-        
-        if (getRes.ok) {
-            const fileData = await getRes.json();
-            sha = fileData.sha;
-        }
-
-        const conteudoJson = JSON.stringify(produtos, null, 2);
-        const bytes = new TextEncoder().encode(conteudoJson);
-        let binary = '';
-        bytes.forEach(b => binary += String.fromCharCode(b));
-        const conteudoBase64 = btoa(binary);
-
-        const bodyData = {
-            message: "Atualização automática de estoque via Painel Admin [garimpo.exe]",
-            content: conteudoBase64,
-            branch: GITHUB_BRANCH
-        };
-        if (sha) bodyData.sha = sha;
-
-        const putRes = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json",
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(bodyData)
-        });
-
-        if (!putRes.ok) {
-            const errJson = await putRes.json();
-            throw new Error(errJson.message || "Erro ao atualizar repositório");
-        }
-    } catch (e) {
-        console.error("Erro detalhado no commit:", e);
-        alert("Falha ao sincronizar com o GitHub: " + e.message);
-        throw e;
-    }
-}
-
+// 2. RENDERIZAR CATÁLOGO NO SITE PRINCIPAL
 function renderizarCatalogo(lista = produtos) {
     const catalogoEl = document.getElementById('catalogo');
     const contadorEl = document.getElementById('contador-pecas');
@@ -119,6 +80,7 @@ function renderizarCatalogo(lista = produtos) {
     });
 }
 
+// 3. FILTROS
 function abrirFiltros() { document.getElementById('modal-filtros').classList.remove('hidden'); }
 function fecharFiltros() { document.getElementById('modal-filtros').classList.add('hidden'); }
 function aplicarFiltros() {
@@ -144,6 +106,7 @@ function limparFiltros() {
     fecharFiltros();
 }
 
+// 4. DETALHES E GALERIA DE FOTOS NO SITE
 let produtoAtual = null;
 function abrirDetalhes(id) {
     const p = produtos.find(item => item.id === id);
@@ -249,6 +212,7 @@ function copiarMensagem() {
     });
 }
 
+// 5. PAINEL ADMIN - COMPRESSÃO DE IMAGEM
 async function comprimirEConverterImagem(fileInputId) {
     return new Promise((resolve) => {
         const fileInput = document.getElementById(fileInputId);
@@ -289,83 +253,86 @@ async function comprimirEConverterImagem(fileInputId) {
     });
 }
 
+// 6. CADASTRAR OU EDITAR PEÇA DIRETO NO SUPABASE
 async function salvarOuAtualizarProduto(event) {
     event.preventDefault();
     
     const btnSubmit = document.getElementById('btn-submit-form');
     const textoOriginal = btnSubmit.innerText;
-    btnSubmit.innerText = "⏳ Enviando para o GitHub...";
+    btnSubmit.innerText = "⏳ Salvando no site...";
     btnSubmit.disabled = true;
 
-    const editId = document.getElementById('edit-id').value;
-    const foto1 = await comprimirEConverterImagem('arquivo-foto-1');
-    const foto2 = await comprimirEConverterImagem('arquivo-foto-2');
-    const foto3 = await comprimirEConverterImagem('arquivo-foto-3');
-
-    const nome = document.getElementById('cad-nome').value;
-    const preco = parseFloat(document.getElementById('cad-preco').value) || 0;
-    const categoria = document.getElementById('cad-categoria').value;
-    const subcategoria = document.getElementById('cad-sub').value;
-    const tamanho = document.getElementById('cad-tamanho').value;
-    const marca = document.getElementById('cad-marca').value;
-    const tecido = document.getElementById('cad-tecido').value;
-    const avarias = document.getElementById('cad-avarias').value;
-    const medidas = document.getElementById('cad-medidas').value;
-
-    if (editId) {
-        const p = produtos.find(item => item.id == editId);
-        if (p) {
-            p.nome = nome;
-            p.preco = preco;
-            p.categoria = categoria;
-            p.subcategoria = subcategoria;
-            p.tamanho = tamanho;
-            p.marca = marca;
-            p.tecido = tecido;
-            p.avarias = avarias;
-            p.medidas = medidas;
-
-            if (foto1) p.fotos[0] = foto1;
-            if (foto2) p.fotos[1] = foto2;
-            if (foto3) p.fotos[2] = foto3;
-            p.fotos = p.fotos.filter(f => f !== null && f !== undefined);
-        }
-        alert("✨ Peça atualizada e enviada para o site!");
-        cancelarEdicao();
-    } else {
-        const novasFotos = [foto1, foto2, foto3].filter(f => f !== null);
-        const novoProduto = {
-            id: Date.now(),
-            nome: nome,
-            preco: preco,
-            categoria: categoria,
-            subcategoria: subcategoria,
-            tamanho: tamanho,
-            fotos: novasFotos,
-            marca: marca,
-            tecido: tecido,
-            avarias: avarias,
-            medidas: medidas,
-            status: "disponivel"
-        };
-
-        produtos.push(novo novoProduto); // corrigido
-        produtos.push(novoProduto);
-        alert("✨ Peça cadastrada e enviada para o site!");
-        document.getElementById('form-produto').reset();
-    }
-
     try {
-        await salvarProdutosNaNuvem();
+        const editId = document.getElementById('edit-id').value;
+        const foto1 = await comprimirEConverterImagem('arquivo-foto-1');
+        const foto2 = await comprimirEConverterImagem('arquivo-foto-2');
+        const foto3 = await comprimirEConverterImagem('arquivo-foto-3');
+
+        const nome = document.getElementById('cad-nome').value;
+        const preco = parseFloat(document.getElementById('cad-preco').value) || 0;
+        const categoria = document.getElementById('cad-categoria').value;
+        const subcategoria = document.getElementById('cad-sub').value;
+        const tamanho = document.getElementById('cad-tamanho').value;
+        const marca = document.getElementById('cad-marca').value;
+        const tecido = document.getElementById('cad-tecido').value;
+        const avarias = document.getElementById('cad-avarias').value;
+        const medidas = document.getElementById('cad-medidas').value;
+
+        if (editId) {
+            const p = produtos.find(item => item.id == editId);
+            let fotosAtualizadas = p && p.fotos ? [...p.fotos] : [];
+            if (foto1) fotosAtualizadas[0] = foto1;
+            if (foto2) fotosAtualizadas[1] = foto2;
+            if (foto3) fotosAtualizadas[2] = foto3;
+            fotosAtualizadas = fotosAtualizadas.filter(f => f !== null && f !== undefined);
+
+            const dadosAtualizados = {
+                nome, preco, categoria, subcategoria, tamanho,
+                fotos: fotosAtualizadas,
+                marca, tecido, avarias, medidas
+            };
+
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/pecas?id=eq.${editId}`, {
+                method: 'PATCH',
+                headers: headersSupabase,
+                body: JSON.stringify(dadosAtualizados)
+            });
+
+            if (!res.ok) throw new Error(await res.text());
+
+            alert("✨ Peça atualizada com sucesso!");
+            cancelarEdicao();
+        } else {
+            const novasFotos = [foto1, foto2, foto3].filter(f => f !== null);
+            const novoProduto = {
+                id: Date.now(),
+                nome, preco, categoria, subcategoria, tamanho,
+                fotos: novasFotos,
+                marca, tecido, avarias, medidas,
+                status: "disponivel"
+            };
+
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/pecas`, {
+                method: 'POST',
+                headers: headersSupabase,
+                body: JSON.stringify(novoProduto)
+            });
+
+            if (!res.ok) throw new Error(await res.text());
+
+            alert("✨ Peça cadastrada e já está no site para todo mundo!");
+            document.getElementById('form-produto').reset();
+        }
+
+        await carregarProdutosDaNuvem();
+
     } catch (err) {
+        console.error("Erro ao salvar:", err);
+        alert("Erro ao salvar peça: " + err.message);
+    } finally {
         btnSubmit.innerText = textoOriginal;
         btnSubmit.disabled = false;
-        return;
     }
-    
-    btnSubmit.innerText = textoOriginal;
-    btnSubmit.disabled = false;
-    atualizarPainelAdmin();
 }
 
 function carregarParaEdicao(id) {
@@ -450,18 +417,34 @@ function atualizarPainelAdmin() {
 
 async function alternarStatus(id) {
     const p = produtos.find(item => item.id === id);
-    if (p) {
-        p.status = p.status === 'disponivel' ? 'reservado' : 'disponivel';
-        await salvarProdutosNaNuvem();
-        atualizarPainelAdmin();
+    if (!p) return;
+    
+    const novoStatus = p.status === 'disponivel' ? 'reservado' : 'disponivel';
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/pecas?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: headersSupabase,
+            body: JSON.stringify({ status: novoStatus })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await carregarProdutosDaNuvem();
+    } catch (e) {
+        alert("Erro ao mudar status: " + e.message);
     }
 }
 
 async function excluirProduto(id) {
-    if (confirm("Tem certeza que deseja excluir esta peça do garimpo?")) {
-        produtos = produtos.filter(item => item.id !== id);
-        await salvarProdutosNaNuvem();
-        atualizarPainelAdmin();
+    if (!confirm("Tem certeza que deseja excluir esta peça do garimpo?")) return;
+    
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/pecas?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: headersSupabase
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await carregarProdutosDaNuvem();
+    } catch (e) {
+        alert("Erro ao excluir peça: " + e.message);
     }
 }
 
