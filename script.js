@@ -1,11 +1,54 @@
-// Sistema de Produtos do garimpo.exe (Salva no navegador com redimensionador e edição)
-let produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
+// Configuração do JSONBin.io para Sincronização em Tempo Real Global
+const JSONBIN_BIN_ID = "6afb4f4dac6210605a8cbf82";
+const JSONBIN_MASTER_KEY = "$2a$10$t.vYcZgZEhrTpIfvzQCLMu.ZRvUtyiGAcAmWjOlx8mx9CLFc.yYcC";
 
-function salvarProdutos() {
+let produtos = [];
+
+// Carregar produtos da nuvem (JSONBin)
+async function carregarProdutosDaNuvem() {
     try {
-        localStorage.setItem('garimpo_produtos', JSON.stringify(produtos));
+        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            headers: {
+                "X-Master-Key": JSONBIN_MASTER_KEY
+            }
+        });
+        const dados = await resposta.json();
+        // O JSONBin guarda os dados dentro de dados.record
+        if (dados && dados.record) {
+            produtos = dados.record.produtos || dados.record || [];
+        }
     } catch (e) {
-        alert("A memória do navegador ficou cheia com fotos muito grandes. Tente usar imagens menores.");
+        console.error("Erro ao carregar produtos da nuvem:", e);
+        // Fallback temporário para o localStorage se der falha de rede
+        produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
+    }
+
+    // Atualiza a tela dependendo de onde o script estiver rodando
+    if (document.getElementById('catalogo')) {
+        renderizarCatalogo(produtos);
+    }
+    if (document.getElementById('lista-admin')) {
+        atualizarPainelAdmin();
+    }
+}
+
+// Salvar produtos na nuvem (JSONBin)
+async function salvarProdutosNaNuvem() {
+    try {
+        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                "Content-Type": "application/json",
+                "X-Master-Key": JSONBIN_MASTER_KEY
+            },
+            body: JSON.stringify({ produtos: produtos })
+        });
+        if (!resposta.ok) {
+            throw new Error("Erro ao salvar na nuvem");
+        }
+    } catch (e) {
+        console.error("Erro ao salvar na nuvem:", e);
+        alert("Aviso: Houve um problema ao sincronizar com a nuvem. Verifique sua conexão.");
     }
 }
 
@@ -187,7 +230,7 @@ function copiarMensagem() {
     });
 }
 
-// 4. FUNÇÕES DO PAINEL ADMIN (Com Cadastro e Edição)
+// 4. FUNÇÕES DO PAINEL ADMIN (Com Nuvem Global)
 async function comprimirEConverterImagem(fileInputId) {
     return new Promise((resolve) => {
         const fileInput = document.getElementById(fileInputId);
@@ -253,7 +296,6 @@ async function salvarOuAtualizarProduto(event) {
     const medidas = document.getElementById('cad-medidas').value;
 
     if (editId) {
-        // EDIÇÃO DE PEÇA EXISTENTE
         const p = produtos.find(item => item.id == editId);
         if (p) {
             p.nome = nome;
@@ -266,17 +308,14 @@ async function salvarOuAtualizarProduto(event) {
             p.avarias = avarias;
             p.medidas = medidas;
 
-            // Se novas fotos foram escolhidas, atualiza; senão, mantém as antigas
             if (foto1) p.fotos[0] = foto1;
             if (foto2) p.fotos[1] = foto2;
             if (foto3) p.fotos[2] = foto3;
-            // Limpa nulos se houver
             p.fotos = p.fotos.filter(f => f !== null && f !== undefined);
         }
         alert("✨ Peça atualizada com sucesso!");
         cancelarEdicao();
     } else {
-        // CADASTRO DE NOVA PEÇA
         const novasFotos = [foto1, foto2, foto3].filter(f => f !== null);
         const novoProduto = {
             id: Date.now(),
@@ -298,7 +337,8 @@ async function salvarOuAtualizarProduto(event) {
         document.getElementById('form-produto').reset();
     }
 
-    salvarProdutos();
+    // Salva na nuvem global
+    await salvarProdutosNaNuvem();
     atualizarPainelAdmin();
 }
 
@@ -317,12 +357,10 @@ function carregarParaEdicao(id) {
     document.getElementById('cad-avarias').value = p.avarias || '';
     document.getElementById('cad-medidas').value = p.medidas || '';
 
-    // Muda o visual do formulário para modo edição
     document.getElementById('titulo-form').innerText = "✏️ Editando Peça";
     document.getElementById('btn-submit-form').innerText = "💾 Salvar Alterações";
     document.getElementById('btn-cancelar-edicao').classList.remove('hidden');
 
-    // Sobe a tela suavemente até o formulário
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -384,26 +422,24 @@ function atualizarPainelAdmin() {
     if (valEl) valEl.innerText = `R$ ${totalValor.toFixed(2).replace('.', ',')}`;
 }
 
-function alternarStatus(id) {
+async function alternarStatus(id) {
     const p = produtos.find(item => item.id === id);
     if (p) {
         p.status = p.status === 'disponivel' ? 'reservado' : 'disponivel';
-        salvarProdutos();
+        await salvarProdutosNaNuvem();
         atualizarPainelAdmin();
     }
 }
 
-function excluirProduto(id) {
+async function excluirProduto(id) {
     if (confirm("Tem certeza que deseja excluir esta peça do garimpo?")) {
         produtos = produtos.filter(item => item.id !== id);
-        salvarProdutos();
+        await salvarProdutosNaNuvem();
         atualizarPainelAdmin();
     }
 }
 
-// Inicialização automática ao abrir o site principal ou admin
+// Inicialização automática puxando da nuvem ao abrir o site ou admin
 window.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('catalogo')) {
-        renderizarCatalogo(produtos);
-    }
+    carregarProdutosDaNuvem();
 });
