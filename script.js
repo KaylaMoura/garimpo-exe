@@ -1,13 +1,12 @@
-// Configuração do GitHub para Sincronização em Tempo Real Global e Nativa
+// Configuração do GitHub com tratamento de requisição móvel
 const GITHUB_USER = "kaylamoura";
 const GITHUB_REPO = "garimpo-exe";
-const GITHUB_BRANCH = "main"; // ou 'master', dependendo de como estiver no seu GitHub
+const GITHUB_BRANCH = "main";
 const GITHUB_TOKEN = "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";
 const FILE_PATH = "produtos.json";
 
 let produtos = [];
 
-// Carregar produtos direto do arquivo JSON no GitHub
 async function carregarProdutosDaNuvem() {
     try {
         const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${FILE_PATH}?t=${Date.now()}`;
@@ -17,33 +16,27 @@ async function carregarProdutosDaNuvem() {
             const dados = await resposta.json();
             produtos = Array.isArray(dados) ? dados : (dados.produtos || []);
         } else {
-            // Se o arquivo ainda não existir, começa vazio
             produtos = [];
         }
     } catch (e) {
-        console.error("Erro ao carregar produtos do GitHub:", e);
+        console.error("Erro ao carregar do GitHub:", e);
         produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
     }
 
-    if (document.getElementById('catalogo')) {
-        renderizarCatalogo(produtos);
-    }
-    if (document.getElementById('lista-admin')) {
-        atualizarPainelAdmin();
-    }
+    if (document.getElementById('catalogo')) renderizarCatalogo(produtos);
+    if (document.getElementById('lista-admin')) atualizarPainelAdmin();
 }
 
-// Salvar produtos atualizando o arquivo no GitHub via API
 async function salvarProdutosNaNuvem() {
     try {
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
         
-        // 1. Precisamos pegar o SHA atual do arquivo (exigência da API do GitHub para atualizar arquivos existentes)
         let sha = null;
         const getRes = await fetch(apiUrl, {
+            method: 'GET',
             headers: {
                 "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json"
+                "Accept": "vnd.github+json"
             }
         });
         
@@ -52,37 +45,38 @@ async function salvarProdutosNaNuvem() {
             sha = fileData.sha;
         }
 
-        // 2. Prepara o conteúdo em Base64 (padrão que o GitHub exige para gravar arquivos)
         const conteudoJson = JSON.stringify(produtos, null, 2);
-        const conteudoBase64 = btoa(unescape(encodeURIComponent(conteudoJson)));
+        // Codificação segura compatível com navegadores móveis (Android/iOS)
+        const bytes = new TextEncoder().encode(conteudoJson);
+        let binary = '';
+        bytes.forEach(b => binary += String.fromCharCode(b));
+        const conteudoBase64 = btoa(binary);
 
-        // 3. Envia o commit automático para o GitHub
         const bodyData = {
-            message: "Atualização automática de estoque via Painel Admin [garimpo.exe]",
+            message: "Atualização de estoque via Painel Admin [garimpo.exe]",
             content: conteudoBase64,
             branch: GITHUB_BRANCH
         };
-        if (sha) {
-            bodyData.sha = sha; // Se o arquivo já existe, mandamos o SHA junto
-        }
+        if (sha) bodyData.sha = sha;
 
         const putRes = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
                 "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "application/vnd.github+json",
+                "Accept": "vnd.github+json",
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(bodyData)
         });
 
         if (!putRes.ok) {
-            throw new Error("Erro ao salvar no GitHub API");
+            const errJson = await putRes.json();
+            throw new Error(errJson.message || "Erro desconhecido na API do GitHub");
         }
 
     } catch (e) {
-        console.error("Erro ao salvar na nuvem:", e);
-        alert("Aviso: Falha ao sincronizar com o GitHub. Verifique o console.");
+        console.error("Erro detalhado:", e);
+        alert("Falha ao sincronizar: " + e.message);
     }
 }
 
@@ -264,7 +258,7 @@ function copiarMensagem() {
     });
 }
 
-// 4. FUNÇÕES DO PAINEL ADMIN (Com Sincronização via GitHub)
+// 4. FUNÇÕES DO PAINEL ADMIN
 async function comprimirEConverterImagem(fileInputId) {
     return new Promise((resolve) => {
         const fileInput = document.getElementById(fileInputId);
@@ -314,10 +308,9 @@ async function comprimirEConverterImagem(fileInputId) {
 async function salvarOuAtualizarProduto(event) {
     event.preventDefault();
     
-    // Mostra um aviso visual rápido de salvando (opcional)
     const btnSubmit = document.getElementById('btn-submit-form');
     const textoOriginal = btnSubmit.innerText;
-    btnSubmit.innerText = "⏳ Salvando na nuvem do GitHub...";
+    btnSubmit.innerText = "⏳ Sincronizando com o GitHub...";
     btnSubmit.disabled = true;
 
     const editId = document.getElementById('edit-id').value;
@@ -377,7 +370,6 @@ async function salvarOuAtualizarProduto(event) {
         document.getElementById('form-produto').reset();
     }
 
-    // Salva direto no repositório do GitHub
     await salvarProdutosNaNuvem();
     
     btnSubmit.innerText = textoOriginal;
@@ -482,7 +474,6 @@ async function excluirProduto(id) {
     }
 }
 
-// Inicialização automática puxando do GitHub ao abrir o site ou admin
 window.addEventListener('DOMContentLoaded', () => {
     carregarProdutosDaNuvem();
 });
