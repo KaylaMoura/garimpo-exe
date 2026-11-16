@@ -1,82 +1,52 @@
-// Configuração do GitHub com tratamento de requisição móvel
-const GITHUB_USER = "kaylamoura";
-const GITHUB_REPO = "garimpo-exe";
-const GITHUB_BRANCH = "main";
-const GITHUB_TOKEN = "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";
-const FILE_PATH = "produtos.json";
+// Configuração do JSONBin.io (Sincronização Global Definitiva)
+const JSONBIN_BIN_ID = "6afb4f4dac6210605a8cbf82";
+const JSONBIN_MASTER_KEY = "$2a$10$t.vYcZgZEhrTpIfvzQCLMu.ZRvUtyiGAcAmWjOlx8mx9CLFc.yYcC";
 
 let produtos = [];
 
+// Carregar produtos da nuvem
 async function carregarProdutosDaNuvem() {
     try {
-        const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${FILE_PATH}?t=${Date.now()}`;
-        const resposta = await fetch(url);
-        
-        if (resposta.ok) {
-            const dados = await resposta.json();
-            produtos = Array.isArray(dados) ? dados : (dados.produtos || []);
-        } else {
-            produtos = [];
+        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            headers: {
+                "X-Master-Key": JSONBIN_MASTER_KEY
+            }
+        });
+        const dados = await resposta.json();
+        if (dados && dados.record) {
+            produtos = dados.record.produtos || dados.record || [];
         }
     } catch (e) {
-        console.error("Erro ao carregar do GitHub:", e);
+        console.error("Erro ao carregar produtos da nuvem:", e);
         produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
     }
 
-    if (document.getElementById('catalogo')) renderizarCatalogo(produtos);
-    if (document.getElementById('lista-admin')) atualizarPainelAdmin();
+    if (document.getElementById('catalogo')) {
+        renderizarCatalogo(produtos);
+    }
+    if (document.getElementById('lista-admin')) {
+        atualizarPainelAdmin();
+    }
 }
 
+// Salvar produtos na nuvem
 async function salvarProdutosNaNuvem() {
     try {
-        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
-        
-        let sha = null;
-        const getRes = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "vnd.github+json"
-            }
-        });
-        
-        if (getRes.ok) {
-            const fileData = await getRes.json();
-            sha = fileData.sha;
-        }
-
-        const conteudoJson = JSON.stringify(produtos, null, 2);
-        // Codificação segura compatível com navegadores móveis (Android/iOS)
-        const bytes = new TextEncoder().encode(conteudoJson);
-        let binary = '';
-        bytes.forEach(b => binary += String.fromCharCode(b));
-        const conteudoBase64 = btoa(binary);
-
-        const bodyData = {
-            message: "Atualização de estoque via Painel Admin [garimpo.exe]",
-            content: conteudoBase64,
-            branch: GITHUB_BRANCH
-        };
-        if (sha) bodyData.sha = sha;
-
-        const putRes = await fetch(apiUrl, {
+        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
             method: 'PUT',
             headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                "Accept": "vnd.github+json",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-Master-Key": JSONBIN_MASTER_KEY
             },
-            body: JSON.stringify(bodyData)
+            body: JSON.stringify({ produtos: produtos })
         });
-
-        if (!putRes.ok) {
-            const errJson = await putRes.json();
-            throw new Error(errJson.message || "Erro desconhecido na API do GitHub");
+        
+        if (!resposta.ok) {
+            throw new Error("Erro ao salvar na nuvem");
         }
-
     } catch (e) {
-        console.error("Erro detalhado:", e);
-        alert("Falha ao sincronizar: " + e.message);
+        console.error("Erro ao salvar na nuvem:", e);
+        alert("Aviso: Falha ao sincronizar com a nuvem. Verifique sua conexão.");
     }
 }
 
@@ -310,7 +280,7 @@ async function salvarOuAtualizarProduto(event) {
     
     const btnSubmit = document.getElementById('btn-submit-form');
     const textoOriginal = btnSubmit.innerText;
-    btnSubmit.innerText = "⏳ Sincronizando com o GitHub...";
+    btnSubmit.innerText = "⏳ Sincronizando com a nuvem...";
     btnSubmit.disabled = true;
 
     const editId = document.getElementById('edit-id').value;
