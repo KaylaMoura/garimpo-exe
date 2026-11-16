@@ -1,30 +1,31 @@
-// Configuração do JSONBin.io (Estável para o Painel Admin do PC)
+// Configuração do JSONBin.io (Formato de Objeto compatível)
 const JSONBIN_BIN_ID = "6afb4f4dac6210605a8cbf82";
 const JSONBIN_MASTER_KEY = "$2a$10$t.vYcZgZEhrTpIfvzQCLMu.ZRvUtyiGAcAmWjOlx8mx9CLFc.yYcC";
 
 let produtos = [];
 
-// Carregar produtos da nuvem (com fallback de segurança local)
+// Carregar produtos da nuvem (Lendo a propriedade 'produtos' do objeto)
 async function carregarProdutosDaNuvem() {
     try {
         const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
             headers: {
-                "X-Master-Key": JSONBIN_MASTER_KEY
+                "X-Master-Key": JSONBIN_MASTER_KEY,
+                "X-Access-Key": JSONBIN_MASTER_KEY
             }
         });
         if (resposta.ok) {
             const dados = await resposta.json();
+            // Garante que pega o array de produtos de dentro da chave 'produtos'
             if (dados && dados.record) {
-                produtos = dados.record.produtos || dados.record || [];
-                // Atualiza o backup local de segurança do PC
+                produtos = Array.isArray(dados.record) ? dados.record : (dados.record.produtos || []);
                 localStorage.setItem('garimpo_produtos_backup', JSON.stringify(produtos));
             }
         } else {
             throw new Error("Erro na resposta da nuvem");
         }
     } catch (e) {
-        console.warn("Aviso: Usando backup local devido a instabilidade na nuvem:", e);
-        produtos = JSON.parse(localStorage.getItem('garimpo_produtos_backup')) || JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
+        console.warn("Aviso: Usando backup local:", e);
+        produtos = JSON.parse(localStorage.getItem('garimpo_produtos_backup')) || [];
     }
 
     if (document.getElementById('catalogo')) {
@@ -35,9 +36,8 @@ async function carregarProdutosDaNuvem() {
     }
 }
 
-// Salvar produtos na nuvem com segurança contra perda de dados
+// Salvar produtos na nuvem (Enviando em formato de objeto com chave 'produtos')
 async function salvarProdutosNaNuvem() {
-    // Salva imediatamente no backup local do PC para NUNCA perder nada se der pau na internet
     localStorage.setItem('garimpo_produtos_backup', JSON.stringify(produtos));
 
     try {
@@ -45,17 +45,19 @@ async function salvarProdutosNaNuvem() {
             method: 'PUT',
             headers: {
                 "Content-Type": "application/json",
-                "X-Master-Key": JSONBIN_MASTER_KEY
+                "X-Master-Key": JSONBIN_MASTER_KEY,
+                "X-Access-Key": JSONBIN_MASTER_KEY
             },
             body: JSON.stringify({ produtos: produtos })
         });
         
         if (!resposta.ok) {
-            throw new Error("Servidor recusou a gravação");
+            const errBody = await resposta.text();
+            throw new Error("Erro ao salvar: " + errBody);
         }
     } catch (e) {
         console.error("Erro ao salvar na nuvem:", e);
-        alert("⚠️ ATENÇÃO: Seus dados foram salvos no seu computador, mas a nuvem demorou a responder. Suas peças NÃO foram perdidas, tente atualizar em instantes.");
+        alert("⚠️ ATENÇÃO: Falha ao sincronizar com a nuvem. Verifique sua conexão.");
     }
 }
 
