@@ -1,67 +1,92 @@
-// Configuração do JSONBin.io (Formato de Objeto compatível)
-const JSONBIN_BIN_ID = "6afb4f4dac6210605a8cbf82";
-const JSONBIN_MASTER_KEY = "$2a$10$t.vYcZgZEhrTpIfvzQCLMu.ZRvUtyiGAcAmWjOlx8mx9CLFc.yYcC";
+// Configuração Oficial do GitHub para Commit Automático Direto
+const GITHUB_USER = "kaylamoura";
+const GITHUB_REPO = "garimpo-exe";
+const GITHUB_BRANCH = "main";
+// Cole aqui o seu token clássico do GitHub que tem permissão "repo"
+const GITHUB_TOKEN = "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"; 
+const FILE_PATH = "produtos.json";
 
 let produtos = [];
 
-// Carregar produtos da nuvem (Lendo a propriedade 'produtos' do objeto)
+// 1. CARREGAR PRODUTOS DO GITHUB (Público/Raw)
 async function carregarProdutosDaNuvem() {
     try {
-        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: {
-                "X-Master-Key": JSONBIN_MASTER_KEY,
-                "X-Access-Key": JSONBIN_MASTER_KEY
-            }
-        });
+        const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${FILE_PATH}?t=${Date.now()}`;
+        const resposta = await fetch(url);
+        
         if (resposta.ok) {
             const dados = await resposta.json();
-            // Garante que pega o array de produtos de dentro da chave 'produtos'
-            if (dados && dados.record) {
-                produtos = Array.isArray(dados.record) ? dados.record : (dados.record.produtos || []);
-                localStorage.setItem('garimpo_produtos_backup', JSON.stringify(produtos));
-            }
+            produtos = Array.isArray(dados) ? dados : (dados.produtos || []);
         } else {
-            throw new Error("Erro na resposta da nuvem");
+            produtos = [];
         }
     } catch (e) {
-        console.warn("Aviso: Usando backup local:", e);
-        produtos = JSON.parse(localStorage.getItem('garimpo_produtos_backup')) || [];
+        console.error("Erro ao carregar do GitHub:", e);
+        produtos = [];
     }
 
-    if (document.getElementById('catalogo')) {
-        renderizarCatalogo(produtos);
-    }
-    if (document.getElementById('lista-admin')) {
-        atualizarPainelAdmin();
-    }
+    if (document.getElementById('catalogo')) renderizarCatalogo(produtos);
+    if (document.getElementById('lista-admin')) atualizarPainelAdmin();
 }
 
-// Salvar produtos na nuvem (Enviando em formato de objeto com chave 'produtos')
+// 2. SALVAR PRODUTOS DIRETO NO GITHUB (Com Commit Automático)
 async function salvarProdutosNaNuvem() {
-    localStorage.setItem('garimpo_produtos_backup', JSON.stringify(produtos));
-
     try {
-        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-            method: 'PUT',
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
+        
+        // Passo A: Pega o SHA atual do arquivo no GitHub (obrigatório para atualizar via API)
+        let sha = null;
+        const getRes = await fetch(apiUrl, {
+            method: 'GET',
             headers: {
-                "Content-Type": "application/json",
-                "X-Master-Key": JSONBIN_MASTER_KEY,
-                "X-Access-Key": JSONBIN_MASTER_KEY
-            },
-            body: JSON.stringify({ produtos: produtos })
+                "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                "Accept": "application/vnd.github+json"
+            }
         });
         
-        if (!resposta.ok) {
-            const errBody = await resposta.text();
-            throw new Error("Erro ao salvar: " + errBody);
+        if (getRes.ok) {
+            const fileData = await getRes.json();
+            sha = fileData.sha;
         }
+
+        // Passo B: Prepara o conteúdo em Base64 de forma compatível
+        const conteudoJson = JSON.stringify(produtos, null, 2);
+        const bytes = new TextEncoder().encode(conteudoJson);
+        let binary = '';
+        bytes.forEach(b => binary += String.fromCharCode(b));
+        const conteudoBase64 = btoa(binary);
+
+        const bodyData = {
+            message: "Atualização automática de estoque via Painel Admin [garimpo.exe]",
+            content: conteudoBase64,
+            branch: GITHUB_BRANCH
+        };
+        if (sha) bodyData.sha = sha;
+
+        // Passo C: Envia o PUT para o GitHub atualizar o arquivo sozinho
+        const putRes = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                "Accept": "application/vnd.github+json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(bodyData)
+        });
+
+        if (!putRes.ok) {
+            const errJson = await putRes.json();
+            throw new Error(errJson.message || "Erro ao atualizar repositório");
+        }
+
     } catch (e) {
-        console.error("Erro ao salvar na nuvem:", e);
-        alert("⚠️ ATENÇÃO: Falha ao sincronizar com a nuvem. Verifique sua conexão.");
+        console.error("Erro detalhado no commit:", e);
+        alert("Falha ao sincronizar com o GitHub: " + e.message);
+        throw e; // Interrompe para você saber se falhou
     }
 }
 
-// 1. RENDERIZAR CATÁLOGO NO SITE PRINCIPAL
+// 3. RENDERIZAR CATÁLOGO NO SITE PRINCIPAL
 function renderizarCatalogo(lista = produtos) {
     const catalogoEl = document.getElementById('catalogo');
     const contadorEl = document.getElementById('contador-pecas');
@@ -104,7 +129,7 @@ function renderizarCatalogo(lista = produtos) {
     });
 }
 
-// 2. FILTROS
+// 4. FILTROS
 function abrirFiltros() { document.getElementById('modal-filtros').classList.remove('hidden'); }
 function fecharFiltros() { document.getElementById('modal-filtros').classList.add('hidden'); }
 function aplicarFiltros() {
@@ -130,7 +155,7 @@ function limparFiltros() {
     fecharFiltros();
 }
 
-// 3. DETALHES E GALERIA DE FOTOS NO SITE
+// 5. DETALHES E GALERIA
 let produtoAtual = null;
 function abrirDetalhes(id) {
     const p = produtos.find(item => item.id === id);
@@ -212,10 +237,7 @@ function abrirDetalhes(id) {
     document.getElementById('modal-detalhes').classList.remove('hidden');
 }
 
-function trocarFoto(url) {
-    document.getElementById('foto-principal').src = url;
-}
-
+function trocarFoto(url) { document.getElementById('foto-principal').src = url; }
 function fecharDetalhes() { document.getElementById('modal-detalhes').classList.add('hidden'); }
 function mostrarBlocoReserva() {
     document.getElementById('bloco-reserva').classList.remove('hidden');
@@ -239,7 +261,7 @@ function copiarMensagem() {
     });
 }
 
-// 4. FUNÇÕES DO PAINEL ADMIN
+// 6. PAINEL ADMIN E COMPRESSÃO DE IMAGEM
 async function comprimirEConverterImagem(fileInputId) {
     return new Promise((resolve) => {
         const fileInput = document.getElementById(fileInputId);
@@ -261,15 +283,9 @@ async function comprimirEConverterImagem(fileInputId) {
                 let height = img.height;
 
                 if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                 } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
                 }
 
                 canvas.width = width;
@@ -291,7 +307,7 @@ async function salvarOuAtualizarProduto(event) {
     
     const btnSubmit = document.getElementById('btn-submit-form');
     const textoOriginal = btnSubmit.innerText;
-    btnSubmit.innerText = "⏳ Salvando peça...";
+    btnSubmit.innerText = "⏳ Enviando para o GitHub...";
     btnSubmit.disabled = true;
 
     const editId = document.getElementById('edit-id').value;
@@ -327,7 +343,7 @@ async function salvarOuAtualizarProduto(event) {
             if (foto3) p.fotos[2] = foto3;
             p.fotos = p.fotos.filter(f => f !== null && f !== undefined);
         }
-        alert("✨ Peça atualizada com sucesso!");
+        alert("✨ Peça atualizada e enviada para o site!");
         cancelarEdicao();
     } else {
         const novasFotos = [foto1, foto2, foto3].filter(f => f !== null);
@@ -347,11 +363,17 @@ async function salvarOuAtualizarProduto(event) {
         };
 
         produtos.push(novoProduto);
-        alert("✨ Peça cadastrada com sucesso!");
+        alert("✨ Peça cadastrada e enviada para o site!");
         document.getElementById('form-produto').reset();
     }
 
-    await salvarProdutosNaNuvem();
+    try {
+        await salvarProdutosNaNuvem();
+    } catch (err) {
+        btnSubmit.innerText = textoOriginal;
+        btnSubmit.disabled = false;
+        return;
+    }
     
     btnSubmit.innerText = textoOriginal;
     btnSubmit.disabled = false;
