@@ -1,29 +1,30 @@
-// Configuração do JSONBin.io para Sincronização em Tempo Real Global
-const JSONBIN_BIN_ID = "6afb4f4dac6210605a8cbf82";
-const JSONBIN_MASTER_KEY = "$2a$10$t.vYcZgZEhrTpIfvzQCLMu.ZRvUtyiGAcAmWjOlx8mx9CLFc.yYcC";
+// Configuração do GitHub para Sincronização em Tempo Real Global e Nativa
+const GITHUB_USER = "kaylamoura";
+const GITHUB_REPO = "garimpo-exe";
+const GITHUB_BRANCH = "main"; // ou 'master', dependendo de como estiver no seu GitHub
+const GITHUB_TOKEN = "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";
+const FILE_PATH = "produtos.json";
 
 let produtos = [];
 
-// Carregar produtos da nuvem (JSONBin)
+// Carregar produtos direto do arquivo JSON no GitHub
 async function carregarProdutosDaNuvem() {
     try {
-        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: {
-                "X-Master-Key": JSONBIN_MASTER_KEY
-            }
-        });
-        const dados = await resposta.json();
-        // O JSONBin guarda os dados dentro de dados.record
-        if (dados && dados.record) {
-            produtos = dados.record.produtos || dados.record || [];
+        const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${FILE_PATH}?t=${Date.now()}`;
+        const resposta = await fetch(url);
+        
+        if (resposta.ok) {
+            const dados = await resposta.json();
+            produtos = Array.isArray(dados) ? dados : (dados.produtos || []);
+        } else {
+            // Se o arquivo ainda não existir, começa vazio
+            produtos = [];
         }
     } catch (e) {
-        console.error("Erro ao carregar produtos da nuvem:", e);
-        // Fallback temporário para o localStorage se der falha de rede
+        console.error("Erro ao carregar produtos do GitHub:", e);
         produtos = JSON.parse(localStorage.getItem('garimpo_produtos')) || [];
     }
 
-    // Atualiza a tela dependendo de onde o script estiver rodando
     if (document.getElementById('catalogo')) {
         renderizarCatalogo(produtos);
     }
@@ -32,23 +33,56 @@ async function carregarProdutosDaNuvem() {
     }
 }
 
-// Salvar produtos na nuvem (JSONBin)
+// Salvar produtos atualizando o arquivo no GitHub via API
 async function salvarProdutosNaNuvem() {
     try {
-        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
+        
+        // 1. Precisamos pegar o SHA atual do arquivo (exigência da API do GitHub para atualizar arquivos existentes)
+        let sha = null;
+        const getRes = await fetch(apiUrl, {
+            headers: {
+                "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                "Accept": "application/vnd.github+json"
+            }
+        });
+        
+        if (getRes.ok) {
+            const fileData = await getRes.json();
+            sha = fileData.sha;
+        }
+
+        // 2. Prepara o conteúdo em Base64 (padrão que o GitHub exige para gravar arquivos)
+        const conteudoJson = JSON.stringify(produtos, null, 2);
+        const conteudoBase64 = btoa(unescape(encodeURIComponent(conteudoJson)));
+
+        // 3. Envia o commit automático para o GitHub
+        const bodyData = {
+            message: "Atualização automática de estoque via Painel Admin [garimpo.exe]",
+            content: conteudoBase64,
+            branch: GITHUB_BRANCH
+        };
+        if (sha) {
+            bodyData.sha = sha; // Se o arquivo já existe, mandamos o SHA junto
+        }
+
+        const putRes = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
-                "Content-Type": "application/json",
-                "X-Master-Key": JSONBIN_MASTER_KEY
+                "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                "Accept": "application/vnd.github+json",
+                "Content-Type": "application/json"
             },
-            body: JSON.stringify({ produtos: produtos })
+            body: JSON.stringify(bodyData)
         });
-        if (!resposta.ok) {
-            throw new Error("Erro ao salvar na nuvem");
+
+        if (!putRes.ok) {
+            throw new Error("Erro ao salvar no GitHub API");
         }
+
     } catch (e) {
         console.error("Erro ao salvar na nuvem:", e);
-        alert("Aviso: Houve um problema ao sincronizar com a nuvem. Verifique sua conexão.");
+        alert("Aviso: Falha ao sincronizar com o GitHub. Verifique o console.");
     }
 }
 
@@ -230,7 +264,7 @@ function copiarMensagem() {
     });
 }
 
-// 4. FUNÇÕES DO PAINEL ADMIN (Com Nuvem Global)
+// 4. FUNÇÕES DO PAINEL ADMIN (Com Sincronização via GitHub)
 async function comprimirEConverterImagem(fileInputId) {
     return new Promise((resolve) => {
         const fileInput = document.getElementById(fileInputId);
@@ -280,6 +314,12 @@ async function comprimirEConverterImagem(fileInputId) {
 async function salvarOuAtualizarProduto(event) {
     event.preventDefault();
     
+    // Mostra um aviso visual rápido de salvando (opcional)
+    const btnSubmit = document.getElementById('btn-submit-form');
+    const textoOriginal = btnSubmit.innerText;
+    btnSubmit.innerText = "⏳ Salvando na nuvem do GitHub...";
+    btnSubmit.disabled = true;
+
     const editId = document.getElementById('edit-id').value;
     const foto1 = await comprimirEConverterImagem('arquivo-foto-1');
     const foto2 = await comprimirEConverterImagem('arquivo-foto-2');
@@ -337,8 +377,11 @@ async function salvarOuAtualizarProduto(event) {
         document.getElementById('form-produto').reset();
     }
 
-    // Salva na nuvem global
+    // Salva direto no repositório do GitHub
     await salvarProdutosNaNuvem();
+    
+    btnSubmit.innerText = textoOriginal;
+    btnSubmit.disabled = false;
     atualizarPainelAdmin();
 }
 
@@ -439,7 +482,7 @@ async function excluirProduto(id) {
     }
 }
 
-// Inicialização automática puxando da nuvem ao abrir o site ou admin
+// Inicialização automática puxando do GitHub ao abrir o site ou admin
 window.addEventListener('DOMContentLoaded', () => {
     carregarProdutosDaNuvem();
 });
