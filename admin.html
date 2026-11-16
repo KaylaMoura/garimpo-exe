@@ -57,11 +57,16 @@
                 </div>
             </div>
 
-            <!-- FORMULÁRIO DE CADASTRO -->
+            <!-- FORMULÁRIO DE CADASTRO / EDIÇÃO -->
             <div class="bg-white border-2 border-black p-6 rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-                <h2 class="text-xl font-extrabold mb-4 flex items-center gap-2">✨ Cadastrar Nova Peça</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="titulo-form" class="text-xl font-extrabold flex items-center gap-2">✨ Cadastrar Nova Peça</h2>
+                    <button id="btn-cancelar-edicao" onclick="cancelarEdicao()" class="hidden bg-gray-200 border border-black px-3 py-1 rounded-lg text-xs font-bold hover:bg-gray-300 transition">Cancelar Edição</button>
+                </div>
                 
-                <form id="form-produto" onsubmit="cadastrarProduto(event)" class="space-y-4">
+                <form id="form-produto" onsubmit="salvarOuAtualizarProduto(event)" class="space-y-4">
+                    <input type="hidden" id="edit-id" value="">
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-extrabold uppercase mb-1">Nome da Peça</label>
@@ -110,7 +115,7 @@
 
                     <!-- SELETOR DE FOTOS DA GALERIA -->
                     <div class="space-y-3 bg-pink-50 p-4 rounded-2xl border-2 border-black">
-                        <label class="block text-xs font-extrabold uppercase text-gray-800">📸 Fotos da Peça (Escolha da galeria do celular ou PC)</label>
+                        <label class="block text-xs font-extrabold uppercase text-gray-800">📸 Fotos da Peça (Pode cadastrar sem foto e colocar depois)</label>
                         
                         <div class="space-y-2">
                             <div>
@@ -126,7 +131,7 @@
                                 <input type="file" id="arquivo-foto-3" accept="image/*" class="w-full border-2 border-black rounded-xl p-2 text-xs font-semibold bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-300 file:text-black hover:file:bg-pink-400">
                             </div>
                         </div>
-                        <p class="text-[10px] text-gray-500 font-medium">💡 Dica: Se quiser cadastrar antes e colocar as fotos só amanhã, pode deixar os campos em branco!</p>
+                        <p class="text-[10px] text-gray-500 font-medium">💡 Nota: Se você estiver editando uma peça que já tem foto e não selecionar novas nos campos acima, as fotos anteriores serão mantidas!</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -149,7 +154,7 @@
                         <input type="text" id="cad-medidas" placeholder="Ex: Busto: 90cm | Comprimento: 60cm" class="w-full border-2 border-black rounded-xl p-2.5 text-xs font-semibold">
                     </div>
 
-                    <button type="submit" class="w-full bg-pink-400 border-2 border-black py-3 rounded-xl font-extrabold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition">
+                    <button type="submit" id="btn-submit-form" class="w-full bg-pink-400 border-2 border-black py-3 rounded-xl font-extrabold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition">
                         💾 Cadastrar Peça no Site
                     </button>
                 </form>
