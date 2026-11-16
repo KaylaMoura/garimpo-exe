@@ -1,19 +1,15 @@
-// Configuração Oficial do GitHub para Commit Automático Direto
 const GITHUB_USER = "kaylamoura";
 const GITHUB_REPO = "garimpo-exe";
 const GITHUB_BRANCH = "main";
-// Cole aqui o seu token clássico do GitHub que tem permissão "repo"
 const GITHUB_TOKEN = "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"; 
 const FILE_PATH = "produtos.json";
 
 let produtos = [];
 
-// 1. CARREGAR PRODUTOS DO GITHUB (Público/Raw)
 async function carregarProdutosDaNuvem() {
     try {
         const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${FILE_PATH}?t=${Date.now()}`;
         const resposta = await fetch(url);
-        
         if (resposta.ok) {
             const dados = await resposta.json();
             produtos = Array.isArray(dados) ? dados : (dados.produtos || []);
@@ -29,12 +25,10 @@ async function carregarProdutosDaNuvem() {
     if (document.getElementById('lista-admin')) atualizarPainelAdmin();
 }
 
-// 2. SALVAR PRODUTOS DIRETO NO GITHUB (Com Commit Automático)
 async function salvarProdutosNaNuvem() {
     try {
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
         
-        // Passo A: Pega o SHA atual do arquivo no GitHub (obrigatório para atualizar via API)
         let sha = null;
         const getRes = await fetch(apiUrl, {
             method: 'GET',
@@ -49,7 +43,6 @@ async function salvarProdutosNaNuvem() {
             sha = fileData.sha;
         }
 
-        // Passo B: Prepara o conteúdo em Base64 de forma compatível
         const conteudoJson = JSON.stringify(produtos, null, 2);
         const bytes = new TextEncoder().encode(conteudoJson);
         let binary = '';
@@ -63,7 +56,6 @@ async function salvarProdutosNaNuvem() {
         };
         if (sha) bodyData.sha = sha;
 
-        // Passo C: Envia o PUT para o GitHub atualizar o arquivo sozinho
         const putRes = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
@@ -78,15 +70,13 @@ async function salvarProdutosNaNuvem() {
             const errJson = await putRes.json();
             throw new Error(errJson.message || "Erro ao atualizar repositório");
         }
-
     } catch (e) {
         console.error("Erro detalhado no commit:", e);
         alert("Falha ao sincronizar com o GitHub: " + e.message);
-        throw e; // Interrompe para você saber se falhou
+        throw e;
     }
 }
 
-// 3. RENDERIZAR CATÁLOGO NO SITE PRINCIPAL
 function renderizarCatalogo(lista = produtos) {
     const catalogoEl = document.getElementById('catalogo');
     const contadorEl = document.getElementById('contador-pecas');
@@ -129,7 +119,6 @@ function renderizarCatalogo(lista = produtos) {
     });
 }
 
-// 4. FILTROS
 function abrirFiltros() { document.getElementById('modal-filtros').classList.remove('hidden'); }
 function fecharFiltros() { document.getElementById('modal-filtros').classList.add('hidden'); }
 function aplicarFiltros() {
@@ -155,7 +144,6 @@ function limparFiltros() {
     fecharFiltros();
 }
 
-// 5. DETALHES E GALERIA
 let produtoAtual = null;
 function abrirDetalhes(id) {
     const p = produtos.find(item => item.id === id);
@@ -261,7 +249,6 @@ function copiarMensagem() {
     });
 }
 
-// 6. PAINEL ADMIN E COMPRESSÃO DE IMAGEM
 async function comprimirEConverterImagem(fileInputId) {
     return new Promise((resolve) => {
         const fileInput = document.getElementById(fileInputId);
@@ -362,6 +349,7 @@ async function salvarOuAtualizarProduto(event) {
             status: "disponivel"
         };
 
+        produtos.push(novo novoProduto); // corrigido
         produtos.push(novoProduto);
         alert("✨ Peça cadastrada e enviada para o site!");
         document.getElementById('form-produto').reset();
